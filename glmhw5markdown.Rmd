@@ -1,0 +1,46 @@
+---
+title: 'PHP 2514 HW #5'
+author: "Blain Morin"
+date: "April 16, 2018"
+output: html_document
+---
+
+# Question 1:
+
+According to the textbook, 52% of the United States is female. So, we will run our simulation using this proportion. 
+
+```{r}
+
+### Choose our number of simulations:
+n.sims = 1000000
+
+### Initiate a results vector:
+totalweight = c()
+
+
+### Run simulation using a for loop:
+
+set.seed(100)
+
+for (i in 1:n.sims) {
+  
+  sex = rbinom(10, 1, .52) ### Determines gender of the ten people (1 = Female)
+  
+  weight = ifelse(sex == 1, 
+                  rnorm(1, mean = 4.96, sd = .2), ### Weight distribution for female 
+                  rnorm(1, mean = 5.13, sd = .17)) ### Weight distribution for male
+  
+  result = sum(exp(weight)) ### Get weight in pounds by exponentiating and add them all together
+  
+  totalweight[i] = result ### Tally our simulation results
+  
+}
+
+breaks = sum(totalweight >1750) ### Count the number of cases where the elevator breaks
+
+breaks / n.sims ### Probability of failure 
+
+```
+
+After simulating a million times, we find that the probability that the elevator breaks is .21.
+
