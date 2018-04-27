@@ -216,7 +216,7 @@ cd4.complete = cd4[complete.cases(cd4),]
 
 ### Create the plot
 cd4.complete %>%
-  ggplot(aes(x = vdate, y = cd4pct**.5)) + geom_line(aes(color = as.factor(newpid)), alpha = .8)+ ylab("sqrt(cd4%)") +
+  ggplot(aes(x = visitno, y = cd4pct**.5)) + geom_line(aes(color = as.factor(newpid)), alpha = .8)+ ylab("sqrt(cd4%)") +
   xlab("Time") + theme_classic() + theme(legend.position = "none") + ggtitle("Sqrt CD4 over Time (by person)") +
   theme(panel.background = element_rect(fill = "gray4")) 
 
@@ -229,9 +229,8 @@ cd4.complete %>%
 ```{r}
 
 cd4.complete %>%
-  ggplot(aes(x = vdate, y = cd4pct**.5)) +
-  geom_smooth(method = "lm", se = FALSE, aes(color = as.factor(newpid)), alpha = .6) +
-  geom_point(aes(color = as.factor(newpid)), alpha = .5, size = .5) +
+  ggplot(aes(x = visitno, y = cd4pct**.5)) +
+  geom_smooth(method = "lm", se = FALSE, aes(color = as.factor(newpid)), alpha = .6, size = .5) +
   theme_classic() + theme(panel.background = element_rect(fill = "gray4")) +
   theme(legend.position = "none") + 
   ylab("sqrt(cd4pct)") +
@@ -254,7 +253,7 @@ attach(cd4.complete)
 detach(package:metRology)
 
 ### Run no pooling regressions for each individual
-no.pool = lmList(cd4pct**.5 ~ vdate | newpid, data = cd4.complete)
+no.pool = lmList(cd4pct**.5 ~ visitno | newpid, data = cd4.complete)
 
 detach(cd4.complete)
 
@@ -278,7 +277,7 @@ sjt.lm(intercept.model, slope.model)
 detach(no.pool.df)
 ```
 
-We see from the above table that base age and treatment group do not have a significant effect on the baseline cd4 percentage. Moreover, neither base age or treatment has an effect on the change in cd4 during the study.
+We see from the above table that base age has a significant effect on the intercept, but treatment group does not. We also see that neither variable has a significant effect on the slope. 
 
 ## 6: Gelman Hill Chapter 12 #2:
 
@@ -288,23 +287,23 @@ We see from the above table that base age and treatment group do not have a sign
 
 attach(cd4.complete)
 
-vary.intercept = lmer(cd4pct ~ 1 + vdate + (1 | newpid))
+vary.intercept = lmer(cd4pct ~ 1 + visitno + (1 | newpid))
 sjt.lmer(vary.intercept)
 
 ```
 
-The coefficient for time is -0.01. This result means that for each additional day, average cd4 percentage decreases by .01.
+The coefficient for time is -0.27. This result means that for each additional follow up, average cd4 percentage decreases by .27 points.
 
 ### (b)
 
 ```{r, message=FALSE}
 
-vary.intercept2 = lmer(cd4pct ~ 1 + baseage + as.factor(treatmnt) + vdate + (1|newpid))
+vary.intercept2 = lmer(cd4pct ~ 1 + baseage + treatmnt + visitno + (1|newpid))
 sjt.lmer(vary.intercept2)
 
 ```
 
-The interpretation for time is the same as in part (a). For every year in base age, the initial cd4 percentage decreases by .96. The beta on treatment group means that relative to treatment group 1, treatment group 2 sees an average cd4 percentage that is initially 1.91 points higher. 
+The interpretation for time is the same as in part (a). For every year in base age, the initial cd4 percentage decreases by .92. The beta on treatment group means that relative to treatment group 1, treatment group 2 sees an average cd4 percentage that is initially 1.9 points higher. 
 
 ### (c)
 
@@ -333,12 +332,11 @@ Since our p value is .01, there is evidence to suggest that the more complicated
 
 ```{r}
 
-### Going to predict for a point that is one month from the max date
+### Going to predict for a follow up visit #20
 
-max(vdate)
 
 cd4.slice.pred = cd4.slice
-cd4.slice.pred$vdate = as_date("1991-02-14")
+cd4.slice.pred$visitno = 20
 
 preds = predict(vary.intercept2, cd4.slice.pred)
 
@@ -352,11 +350,12 @@ Since there is no bound at 0, some of our predictions are negative. This may sug
 ### (b)
 
 ```{r}
+
 detach(cd4.complete)
 
 ### Create a data frame with all possible combinations of independent variables, for each time period
 
-combos = data.frame(vdate = rep(unique(cd4.slice$vdate), each = 2))
+combos = data.frame(visitno = rep(1:19, each = 2))
 combos = cbind(combos, baseage = 4)
 combos = cbind(combos, treatmnt = as.factor(rep(1:2)))
 combos = cbind(combos, newpid = rep(1:2))
@@ -368,5 +367,49 @@ preds2 = predict(vary.intercept2, combos)
 
 head(preds2)
 summary(preds2)
+
 ```
 
+## 8: Gelman Hill Chapter 12 #4
+
+```{r}
+
+### Find observed mean at final time
+
+final = cd4.complete %>% filter(visitno == 19)
+
+obs.final.mean = mean(final$cd4pct)
+
+
+### Simulate 1000 new data sets
+
+averages = c()
+
+n.sims = 1000
+n = nrow(final)
+
+for(i in 1:n.sims){
+  
+  tempdata = data.frame(
+    baseage = rnorm(n = n, mean = mean(final$baseage), sd = sd(final$baseage)),
+    treatmnt = rbinom(n = n, size = 1, prob = (mean(final$treatmnt) - 1)),
+    visitno = 19,
+    newpid = 1:n
+  )
+  
+  tempdata$treatmnt = tempdata$treatmnt + 1
+  
+  temp.predict = predict(vary.intercept2, tempdata, allow.new.levels = TRUE)
+  
+  averages[i] = mean(temp.predict)
+  
+  
+}
+
+hist(averages)
+
+obs.final.mean
+
+```
+
+Our simulated data has a mean cd4 percentage around 18. As you can see from the histogram, it is pretty tight around 18, and does not contain the observed mean of 22.96. 18 is not horribly far off, but it does suggest that our model has some systematic problem. I would guess that our averages are lower than the observed because our model can predict negative percentages, which would pull the mean down. Thus, logistic regression may help our model fit.
