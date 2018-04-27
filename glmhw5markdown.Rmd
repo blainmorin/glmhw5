@@ -5,7 +5,7 @@ date: "April 16, 2018"
 output: html_document
 ---
 
-```{r}
+```{r, message=FALSE, warning=FALSE, echo = FALSE}
 library(arm)
 library(metRology)
 library(knitr)
@@ -53,7 +53,7 @@ After simulating a million times, we find that the probability that the elevator
 
 ### (a)
 
-How do we use degrees freedom??????????????????
+
 
 ```{r}
 
@@ -92,7 +92,7 @@ confidence.68
 ```
 
 
-In this run, the true paramters are all within the 68% intervals.
+In this run, the true parameters are all within the 68% intervals.
 
 ### (b)
 
@@ -198,6 +198,237 @@ kable(probs.c)
 
 All of the coverage probabilities are near .68. Thus, having errors with a t distribution does not affect our coverge probabilities. 
 
+##4: Gelman Hill Chapter 8 #4
+
+### (a)
+
+```{r, message=FALSE}
+
+library(readr)
+risky = read_csv("risky.csv")[-1]
+risky$fupacts = round(risky$fupacts)
+attach(risky)
+
+### Run poisson regression
+pois.model = glm(fupacts ~ bs_hiv, family = poisson)
+
+### Set number of simulations
+n.sims = 1000
+
+y = risky$fupacts
+n = length(y)
+x = cbind(as.numeric(1), as.factor(bs_hiv))
+
+
+### Run simulation
+sim1 = sim(pois.model, n.sims)
+y.rep = array(NA, c(n.sims, n))
+
+for (i in 1:n.sims) {
+  
+  yhat = exp(x %*% sim1@coef[i,])
+  y.rep[i,] = rpois(n, yhat)
+  
+}
+
+
+### Function for proportion of 0 counts
+test.0 = function(x) {
+  mean(x==0)
+}
+
+
+### Function for proportion of counts greater than 10
+test.10 = function(x) {
+  mean(x >10)
+}
+
+
+### Simulated proportion of 0s
+rep.0 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.0[i] = test.0(y.rep[i])
+}
+
+pred.0 = mean(rep.0)
+
+
+### Simulated proportion of greater than 10
+rep.10 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.10[i] = test.10(y.rep[i])
+}
+
+pred.10 = mean(rep.10)
+
+### Observed proportion of counts = 0
+obs.0 = test.0(fupacts)
+
+### Observed proportion of counts greater than 10
+obs.10 = test.10(fupacts)
+
+
+### Make table
+predicteds = c(pred.0, pred.10)
+observed = c(obs.0, obs.10)
+
+answer = data.frame(predicteds, observed)
+
+kable(answer)
+
+```
+
+We see from the above table that the model predicts no 0 counts, but 29% of the observed data is 0. This is a signal that there may be something wrong with our model. 
+
+### (b)
+
+```{r}
+### Run quasipoisson regression
+qpois.model = glm(fupacts ~ bs_hiv, family = quasipoisson)
+
+### Set number of simulations
+n.sims = 1000
+
+y = risky$fupacts
+n = length(y)
+x = cbind(as.numeric(1), as.factor(bs_hiv))
+
+
+### Run simulation
+sim1 = sim(qpois.model, n.sims)
+y.rep = array(NA, c(n.sims, n))
+
+for (i in 1:n.sims) {
+  
+  yhat = exp(x %*% sim1@coef[i,])
+  y.rep[i,] = rpois(n, yhat)
+  
+}
+
+
+### Function for proportion of 0 counts
+test.0 = function(x) {
+  mean(x==0)
+}
+
+
+### Function for proportion of counts greater than 10
+test.10 = function(x) {
+  mean(x >10)
+}
+
+
+### Simulated proportion of 0s
+rep.0 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.0[i] = test.0(y.rep[i])
+}
+
+pred.0 = mean(rep.0)
+
+
+### Simulated proportion of greater than 10
+rep.10 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.10[i] = test.10(y.rep[i])
+}
+
+pred.10 = mean(rep.10)
+
+### Observed proportion of counts = 0
+obs.0 = test.0(fupacts)
+
+### Observed proportion of counts greater than 10
+obs.10 = test.10(fupacts)
+
+
+### Make table
+predicteds = c(pred.0, pred.10)
+observed = c(obs.0, obs.10)
+
+answer = data.frame(predicteds, observed)
+
+kable(answer)
+
+```
+
+As you can see in the table above, the quasipoisson model does not seem to correct our lack of zeros in our predictions. 
+
+### (c)
+
+```{r}
+
+### Run quasipoisson regression with additional predictors
+qpois.model2 = glm(fupacts ~ bs_hiv + bupacts, family = quasipoisson)
+
+### Set number of simulations
+n.sims = 1000
+
+y = risky$fupacts
+n = length(y)
+x = cbind(as.numeric(1), as.factor(bs_hiv), bupacts)
+
+
+### Run simulation
+sim1 = sim(qpois.model2, n.sims)
+y.rep = array(NA, c(n.sims, n))
+
+for (i in 1:n.sims) {
+  
+  yhat = exp(x %*% sim1@coef[i,])
+  y.rep[i,] = rpois(n, yhat)
+  
+}
+
+
+### Function for proportion of 0 counts
+test.0 = function(x) {
+  mean(x==0)
+}
+
+
+### Function for proportion of counts greater than 10
+test.10 = function(x) {
+  mean(x >10)
+}
+
+
+### Simulated proportion of 0s
+rep.0 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.0[i] = test.0(y.rep[i])
+}
+
+pred.0 = mean(rep.0)
+
+
+### Simulated proportion of greater than 10
+rep.10 = rep(NA, n.sims)
+for(i in 1:n.sims) {
+  rep.10[i] = test.10(y.rep[i])
+}
+
+pred.10 = mean(rep.10)
+
+### Observed proportion of counts = 0
+obs.0 = test.0(fupacts)
+
+### Observed proportion of counts greater than 10
+obs.10 = test.10(fupacts)
+
+
+### Make table
+predicteds = c(pred.0, pred.10)
+observed = c(obs.0, obs.10)
+
+answer = data.frame(predicteds, observed)
+
+kable(answer)
+
+```
+
+Adding the additional predictor did not help improve the lack of zeros in our predictions. 
+
 ## 5: Gelman Hill Chapter 11 #4
 
 ### (a)
@@ -223,6 +454,7 @@ cd4.complete %>%
 
 ```
 
+We see from the above plot that there is lots of variation in the starting CD4 percentages and many different kinds of trajectories over time.
 
 ### (b)
 
@@ -239,10 +471,11 @@ cd4.complete %>%
 
 
 ```
+The above plot shows the variation in the slopes for the individual regressions. We see that some are strongly negative while others are strongly positive. 
 
 ### (c)
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 
 library(lattice)
 library(lme4)
@@ -399,8 +632,10 @@ for(i in 1:n.sims){
   
   tempdata$treatmnt = tempdata$treatmnt + 1
   
+  ### Predict CD4 level using our varying intercept model 
   temp.predict = predict(vary.intercept2, tempdata, allow.new.levels = TRUE)
   
+  ### Tally our mean CD4 level
   averages[i] = mean(temp.predict)
   
   
