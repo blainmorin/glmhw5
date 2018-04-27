@@ -200,12 +200,83 @@ All of the coverage probabilities are near .68. Thus, having errors with a t dis
 
 ## Gelman Hill Chapter 11 #4
 
-```{r}
+### (a)
+
+```{r, message=FALSE}
 
 library(readr)
 library(lubridate)
+library(ggplot2)
+library(dplyr)
+
+### Load data and change the string to a date
 cd4 = read_csv("cd4.csv")
 cd4$vdate = mdy(cd4$vdate)
-str(cd4)
+cd4.complete = cd4[complete.cases(cd4),]
+
+### Create the plot
+cd4.complete %>%
+  ggplot(aes(x = vdate, y = cd4pct**.5)) + geom_line(aes(color = as.factor(newpid)), alpha = .8)+ ylab("sqrt(cd4%)") +
+  xlab("Time") + theme_classic() + theme(legend.position = "none") + ggtitle("Sqrt CD4 over Time (by person)") +
+  theme(panel.background = element_rect(fill = "gray4")) 
+
 
 ```
+
+
+### (b)
+
+```{r}
+
+cd4.complete %>%
+  ggplot(aes(x = vdate, y = cd4pct**.5)) +
+  geom_smooth(method = "lm", se = FALSE, aes(color = as.factor(newpid)), alpha = .6) +
+  geom_point(aes(color = as.factor(newpid)), alpha = .5, size = .5) +
+  theme_classic() + theme(panel.background = element_rect(fill = "gray4")) +
+  theme(legend.position = "none") + 
+  ylab("sqrt(cd4pct)") +
+  xlab("Time") +
+  ggtitle("Linear Models by Person")
+
+
+```
+
+### (c)
+
+```{r}
+
+library(lattice)
+library(lme4)
+library(sjPlot)
+attach(cd4.complete)
+
+###remove conflicting package
+detach(package:metRology)
+
+### Run no pooling regressions for each individual
+no.pool = lmList(cd4pct**.5 ~ vdate | newpid, data = cd4.complete)
+
+detach(cd4.complete)
+
+### Condense data so we have one line per individual
+cd4.slice = cd4.complete %>% group_by(newpid) %>% slice(1)
+
+### Combine into df with slope, intercepts, baseage, and treatment
+no.pool.df = as.data.frame(coef(no.pool))
+no.pool.df = cbind(no.pool.df, cd4.slice$baseage)
+no.pool.df = cbind(no.pool.df, as.factor(cd4.slice$treatmnt))
+names(no.pool.df) = c("intercept", "slope", "baseage", "treatmnt")
+attach(no.pool.df)
+
+### Run model for intercept
+intercept.model = lm(intercept ~ baseage + treatmnt)
+
+### Run model for slope
+slope.model = lm(slope ~ baseage + treatmnt)
+
+sjt.lm(intercept.model, slope.model)
+```
+
+We see from the above table that base age and treatment group do not have a significant effect on the baseline cd4 percentage. Moreover, neither base age or treatment has an effect on the change in cd4 during the study.
+
+
