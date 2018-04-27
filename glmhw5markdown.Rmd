@@ -5,7 +5,13 @@ date: "April 16, 2018"
 output: html_document
 ---
 
-# Question 1:
+```{r}
+library(arm)
+library(metRology)
+library(knitr)
+```
+
+# Question 1: Gellman Hill Chapter 7 #2
 
 According to the textbook, 52% of the United States is female. So, we will run our simulation using this proportion. 
 
@@ -20,15 +26,14 @@ totalweight = c()
 
 ### Run simulation using a for loop:
 
-set.seed(100)
 
 for (i in 1:n.sims) {
   
   sex = rbinom(10, 1, .52) ### Determines gender of the ten people (1 = Female)
   
   weight = ifelse(sex == 1, 
-                  rnorm(1, mean = 4.96, sd = .2), ### Weight distribution for female 
-                  rnorm(1, mean = 5.13, sd = .17)) ### Weight distribution for male
+                  rnorm(10, mean = 4.96, sd = .2), ### Weight distribution for female 
+                  rnorm(10, mean = 5.13, sd = .17)) ### Weight distribution for male
   
   result = sum(exp(weight)) ### Get weight in pounds by exponentiating and add them all together
   
@@ -42,5 +47,165 @@ breaks / n.sims ### Probability of failure
 
 ```
 
-After simulating a million times, we find that the probability that the elevator breaks is .21.
+After simulating a million times, we find that the probability that the elevator breaks is .05.
 
+## 2: Gelman Hill Chapter 7 #8
+
+### (a)
+
+How do we use degrees freedom??????????????????
+
+```{r}
+
+### Set number of simulations to 1000
+n.sims = 1000
+
+### Set estimates given in the problem
+u.cost = 600
+
+
+
+
+```
+
+
+## 3: Gelman Hill Chapter 8 #1
+
+### (a)
+
+```{r}
+
+
+
+x1 = 1:100
+x2 = rbinom(100, 1, .5)
+y = 3 + .1 * x1 + .5 * x2 + rnorm(100, 0, 1)
+
+model.3a = lm(y ~ x1 + x2)
+summary.3a = summary(model.3a)
+betas.3a = summary.3a$coefficients[ , 1]
+beta.error.3a = summary.3a$coefficients[ , 2]
+confidence.68 = cbind(betas.3a - beta.error.3a, betas.3a + beta.error.3a)
+
+confidence.68
+
+```
+
+
+In this run, the true paramters are all within the 68% intervals.
+
+### (b)
+
+```{r}
+
+### Set number of simulations to 1000
+n.sims = 1000
+
+### Initialize a matrix for the parameter estimates
+b.cover = matrix(nrow = 1000, ncol = 3)
+
+### Run the simulation
+for (i in 1:n.sims) {
+  
+  b.x1 = 1:100
+  b.x2 = rbinom(100, 1, .5)
+  y.b = 3 + .1 * b.x1 + .5 * b.x2 + rnorm(100, 0, 1)
+  b.model = lm(y.b ~ b.x1 +b.x2)
+  summary.3b = summary(b.model)
+  est.3b = summary.3b$coefficients[ , 1]
+  err.3b = summary.3b$coefficients[ , 2]
+  
+  ### Set the 68% bounds
+  lower.bound = est.3b - err.3b
+  upper.bound = est.3b + err.3b
+  
+  ### These statements test if the true parameters are within the bounds
+  int.b = ifelse(3 >= lower.bound[1] && 3 <= upper.bound[1], TRUE, FALSE)
+  x1.beta = ifelse(.1 >= lower.bound[2] && .1 <= upper.bound[2], TRUE, FALSE)
+  x2.beta = ifelse(.5 >= lower.bound[3] && .5 <= upper.bound[3], TRUE, FALSE)
+  
+  ### Add the test results to the coverage matrix
+  b.cover[i , 1] = int.b
+  b.cover[i , 2] = x1.beta
+  b.cover[i , 3] = x2.beta
+  
+}
+
+### The coverage probability is the mean
+inter.prob = mean(b.cover[ , 1])
+x1.prob = mean(b.cover[ , 2])
+x2.prob = mean(b.cover[, 3])
+
+### Report results in a table
+probs = cbind(inter.prob, x1.prob, x2.prob)
+
+kable(probs)
+
+
+```
+
+Thus, the probability that the 68% confidence interval covers the true parameter is .68 for the intercept, .67 for the beta on x1, and .69 for the beta on x2. These are all very close to the expected probability of .68.
+
+### (c)
+
+```{r}
+
+### Set number of simulations to 1000
+n.sims = 1000
+
+### Initialize a matrix for the parameter estimates
+c.cover = matrix(nrow = 1000, ncol = 3)
+
+### Run the simulation
+for (i in 1:n.sims) {
+  
+  c.x1 = 1:100
+  c.x2 = rbinom(100, 1, .5)
+  y.c = 3 + .1 * c.x1 + .5 * c.x2 + rt.scaled(100, df = 4, mean = 0, sd = 5)
+  c.model = lm(y.c ~ c.x1 +c.x2)
+  summary.3c = summary(c.model)
+  est.3c = summary.3c$coefficients[ , 1]
+  err.3c = summary.3c$coefficients[ , 2]
+  
+  ### Set the 68% bounds
+  lower.bound = est.3c - err.3c
+  upper.bound = est.3c + err.3c
+  
+  ### These statements test if the true parameters are within the bounds
+  int.c = ifelse(3 >= lower.bound[1] && 3 <= upper.bound[1], TRUE, FALSE)
+  x1.c = ifelse(.1 >= lower.bound[2] && .1 <= upper.bound[2], TRUE, FALSE)
+  x2.c = ifelse(.5 >= lower.bound[3] && .5 <= upper.bound[3], TRUE, FALSE)
+  
+  ### Add the test results to the coverage matrix
+  c.cover[i , 1] = int.c
+  c.cover[i , 2] = x1.c
+  c.cover[i , 3] = x2.c
+  
+}
+
+### The coverage probability is the mean
+inter.prob.c = mean(c.cover[ , 1])
+x1.prob.c = mean(c.cover[ , 2])
+x2.prob.c = mean(c.cover[, 3])
+
+### Report results in a table
+probs.c = cbind(inter.prob.c, x1.prob.c, x2.prob.c)
+
+kable(probs.c)
+
+
+```
+
+All of the coverage probabilities are near .68. Thus, having errors with a t distribution does not affect our coverge probabilities. 
+
+## Gelman Hill Chapter 11 #4
+
+```{r}
+
+library(readr)
+library(lubridate)
+cd4 = read_csv("cd4.csv")
+cd4$vdate = mdy(cd4$vdate)
+str(cd4)
+
+```
