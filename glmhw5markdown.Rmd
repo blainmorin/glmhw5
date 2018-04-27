@@ -55,19 +55,61 @@ After simulating a million times, we find that the probability that the elevator
 
 
 
-```{r}
+```{r, message=FALSE}
+library(dplyr)
+library(ggplot2)
 
-### Set number of simulations to 1000
-n.sims = 1000
+### 1000 Cost difference draws
+cost.difference = rnorm(1000, 600, sd = 400/(52**.5))
 
-### Set estimates given in the problem
-u.cost = 600
+### 1000 Effectiveness difference draws
+effect.diff <- rnorm(1000, 3, sd = 1/(102**.5))
+
+### Create data frame
+data.2a = data.frame(Cost_Diff = cost.difference, Effect_Diff = effect.diff)
 
 
+### Create Scatterplot
+data.2a %>% ggplot(aes(x = Cost_Diff, y = Effect_Diff)) + geom_point() +
+  theme_classic() + ggtitle("Cost Difference vs Effectiveness Difference")
 
 
 ```
 
+### (b)
+
+```{r}
+
+### Initiate matrices
+costs.diff = c()
+effects.diff = c()
+
+### Draw cost and effectiveness
+for(i in 1:1000) {
+  costs.diff = rbind(costs.diff, rnorm(1000, 600, sd = 400/(52**.5)))
+  effects.diff = rbind(effects.diff, rnorm(1000, 3, sd = 1/(102**.5)))
+}
+
+ratio = costs.diff/effects.diff
+
+### Point estimate
+estimate = mean(ratio)
+
+
+### 50% CI
+confidence.50 = quantile(ratio, c(.25, .75))
+
+
+### 95% CI
+confidence.95 = quantile(ratio, c(.05, .95))
+
+
+estimate
+confidence.50
+confidence.95
+
+
+```
 
 ## 3: Gelman Hill Chapter 8 #1
 
@@ -202,7 +244,7 @@ All of the coverage probabilities are near .68. Thus, having errors with a t dis
 
 ### (a)
 
-```{r, message=FALSE}
+```{r, message=FALSE, warning=FALE}
 
 library(readr)
 risky = read_csv("risky.csv")[-1]
@@ -454,6 +496,8 @@ cd4.complete %>%
 
 ```
 
+
+
 We see from the above plot that there is lots of variation in the starting CD4 percentages and many different kinds of trajectories over time.
 
 ### (b)
@@ -471,6 +515,8 @@ cd4.complete %>%
 
 
 ```
+
+
 The above plot shows the variation in the slopes for the individual regressions. We see that some are strongly negative while others are strongly positive. 
 
 ### (c)
