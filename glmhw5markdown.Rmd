@@ -198,7 +198,7 @@ kable(probs.c)
 
 All of the coverage probabilities are near .68. Thus, having errors with a t distribution does not affect our coverge probabilities. 
 
-## Gelman Hill Chapter 11 #4
+## 5: Gelman Hill Chapter 11 #4
 
 ### (a)
 
@@ -275,8 +275,57 @@ intercept.model = lm(intercept ~ baseage + treatmnt)
 slope.model = lm(slope ~ baseage + treatmnt)
 
 sjt.lm(intercept.model, slope.model)
+detach(no.pool.df)
 ```
 
 We see from the above table that base age and treatment group do not have a significant effect on the baseline cd4 percentage. Moreover, neither base age or treatment has an effect on the change in cd4 during the study.
 
+## 6: Gelman Hill Chapter 12 #2:
+
+### (a)
+
+```{r, message = FALSE}
+
+attach(cd4.complete)
+
+vary.intercept = lmer(cd4pct ~ 1 + vdate + (1 | newpid))
+sjt.lmer(vary.intercept)
+
+```
+
+The coefficient for time is -0.01. This result means that for each additional day, average cd4 percentage decreases by .01.
+
+### (b)
+
+```{r, message=FALSE}
+
+vary.intercept2 = lmer(cd4pct ~ 1 + baseage + as.factor(treatmnt) + vdate + (1|newpid))
+sjt.lmer(vary.intercept2)
+
+```
+
+The interpretation for time is the same as in part (a). For every year in base age, the initial cd4 percentage decreases by .96. The beta on treatment group means that relative to treatment group 1, treatment group 2 sees an average cd4 percentage that is initially 1.91 points higher. 
+
+### (c)
+
+```{r, message = FALSE}
+
+sjt.lmer(vary.intercept, vary.intercept2)
+
+
+
+```
+
+### (d)
+
+```{r, message = FALSE}
+
+anova(vary.intercept, vary.intercept2)
+
+
+```
+
+Since our p value is .01, there is evidence to suggest that the more complicated model with the group level predictors gives us a better fit. 
+
+## 7: Gelman Hill Chapter 12 #3
 
