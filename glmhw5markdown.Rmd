@@ -329,3 +329,44 @@ Since our p value is .01, there is evidence to suggest that the more complicated
 
 ## 7: Gelman Hill Chapter 12 #3
 
+### (a)
+
+```{r}
+
+### Going to predict for a point that is one month from the max date
+
+max(vdate)
+
+cd4.slice.pred = cd4.slice
+cd4.slice.pred$vdate = as_date("1991-02-14")
+
+preds = predict(vary.intercept2, cd4.slice.pred)
+
+head(preds)
+summary(preds)
+
+```
+
+Since there is no bound at 0, some of our predictions are negative. This may suggest that using a logistic regression would be a better model.
+
+### (b)
+
+```{r}
+detach(cd4.complete)
+
+### Create a data frame with all possible combinations of independent variables, for each time period
+
+combos = data.frame(vdate = rep(unique(cd4.slice$vdate), each = 2))
+combos = cbind(combos, baseage = 4)
+combos = cbind(combos, treatmnt = as.factor(rep(1:2)))
+combos = cbind(combos, newpid = rep(1:2))
+
+### Predict for each row, this gives us a prediction for a 4 year old child
+### for every date and treatment group
+
+preds2 = predict(vary.intercept2, combos)
+
+head(preds2)
+summary(preds2)
+```
+
