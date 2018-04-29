@@ -2,7 +2,9 @@
 title: 'PHP 2514 HW #5'
 author: "Blain Morin"
 date: "April 16, 2018"
-output: html_document
+output:
+  html_document:
+    theme: journal
 ---
 
 ```{r, message=FALSE, warning=FALSE, echo = FALSE}
@@ -116,17 +118,22 @@ confidence.95
 ### (a)
 
 ```{r}
-
-
-
+### Create predictors
 x1 = 1:100
 x2 = rbinom(100, 1, .5)
+
+### This is the true model
 y = 3 + .1 * x1 + .5 * x2 + rnorm(100, 0, 1)
 
+### Regress y on our created predictors
 model.3a = lm(y ~ x1 + x2)
 summary.3a = summary(model.3a)
+
+### Extract betas and se of betas
 betas.3a = summary.3a$coefficients[ , 1]
 beta.error.3a = summary.3a$coefficients[ , 2]
+
+### Create CI
 confidence.68 = cbind(betas.3a - beta.error.3a, betas.3a + beta.error.3a)
 
 confidence.68
@@ -238,13 +245,13 @@ kable(probs.c)
 
 ```
 
-All of the coverage probabilities are near .68. Thus, having errors with a t distribution does not affect our coverge probabilities. 
+All of the coverage probabilities are near .68. Thus, having errors with a t distribution does not affect our coverage probabilities. 
 
 ##4: Gelman Hill Chapter 8 #4
 
 ### (a)
 
-```{r, message=FALSE, warning=FALE}
+```{r, message=FALSE, warning=FALSE}
 
 library(readr)
 risky = read_csv("risky.csv")[-1]
@@ -591,8 +598,25 @@ The interpretation for time is the same as in part (a). For every year in base a
 sjt.lmer(vary.intercept, vary.intercept2)
 
 
+```
+
+We see from the table above that the pooling difference is small between the two models. The random intercept's variance changes very little (sigma squared in the table). 
+
+```{r}
+
+### Make histograms of the random effects 
+par(mfrow=c(2,1))
+
+model.1 = as.data.frame(ranef(vary.intercept))
+hist(model.1$condval)
+
+model.2 = as.data.frame(ranef(vary.intercept2))
+hist(model.2$condval)
 
 ```
+
+The above histograms show that the random intercepts of the two models have similar distributions. Since they are the only random effects, we can expect that there is not a large difference in the partial pooling.
+
 
 ### (d)
 
